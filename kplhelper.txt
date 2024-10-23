@@ -1,0 +1,918 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace TdxApp
+{
+    public class KplHelper
+    {
+        private static Dictionary<string, string> loginInfo = new Dictionary<string, string>();
+
+        private const string apiv = "w37";
+        private const string VerSion = "5.15.0.4";
+        public static Dictionary<string,string> Login()
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            String host = "https://applhb.longhuvip.com/w1/api/index.php";
+            String str = //"a=LoginDo&apiv=w35&c=Login2&EncryptType=RSA&PhoneOSNew=1&Phone=FIeBkaWptID4EMk3SWLjETaWjb3Kvb9ro4IrN%2FqYscZjvCL08r0k6lt7vTWhV80oz7zjUIqOqWS9%0ApL%2B3jY1G4vcOmSPla62J4rigcpTvuumWgc2tiEChaT0yNQdELK89Nzxv20GODw%2FizvHA%2F4BnF6tb%0AdhHOqE84%2Br88LnFNQlgCZnynuh5%2Fr6BCdzsjmrLi8%2BG8hLUsx5ruwaTZ%2FlTjG6nBfIT8b9iJ0tsH%0AHzNIhQtylb%2FDDQg1yfL5ZLoznfZIhsuAjDz9BcfIygKRAj%2FV3stWLMhaMsl1X0sf2RvgyEybZaS6%0AboNZFikkiiueTxuhJCEtiKCe0e4v0SSFO%2BLRAQ%3D%3D%0A&DeviceToken=231790fe193ff2a0e700e36d4ae6868f&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion=5.13.0.2&ClientID=3&Password=h2j4ME83mHr4cOX8k2E6O8N9r37Sh08PUvV2xzUVgtSbVM51zC146w4cKnzAyIlWkO9HwmSIM4Cd%0AQvTYZGThJ4UW1AaXc4bJGce11VR6Tsh9XHQAlnsjSYUKakXGfpYnQ%2BXW5fGjsO17hPisEY3yz%2BIf%0AtchN%2BAV8EbkcYIBcqfssatAIhFm9RgqK5BvKICFRbRvzvONdxcs27fneMaDmgT1tkBrOUguVoskG%0Aczv3xuJs6bZOyPLutxFsI%2F8D2uhObpIC8CMkPKv5qGFxg%2BUmzV0IbYYWpkMYoGlqtrkCVaQ%2FQard%0AAo6YZy%2BbFZsRR44MlnAdMCstUeYmg%2BaYzfqxww%3D%3D%0A&";
+                String.Format("a=LoginDo&c=Login2&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={1}&apiv={0}&EncryptType=RSA&Phone=n6%2BXR2%2BVRk0ajqU5oVN0ZoivIIvgFM%2BHtA7uq63HBuRR5raC3teezixAiEm9%2B1CrPXOr1RihBXp1%0A8MCJ%2B8nHk8eQKwJNgY38%2BFKMz%2B53%2BVo%2FsE%2B1nSdl5reu9%2FfRE1mN90roY5B%2FH57rYfda6tulwlky%0ADjEkrOcFnZLZY1CguPgIP2ZynsJ86S2%2BgptK6XJyzheLjWwYkCvudbZ8lCxAFffFIDsXaxCedkOQ%0AD3Q04nCC%2FCuS4qFOIX6qWahJPiBb0uRdjlhtsC%2BDuG%2FoKPfvIS3Z4Pddp%2Fe9Y5L%2Fg15Sc5aZgiHK%0A0VsPF1QPFJn80KKxj5DUKWSAuXl%2Bzinq1uTflg%3D%3D%0A&DeviceToken=231790fe193ff2a0e700e36d4ae6868f&ClientID=3&Password=bjFApSUjpa6AXJQn5ffHYYASlQ77sJCE1AH0rCRvQepJuoeYDmqTF%2B2ZMLYLbGieQjdQV%2Bo6aLhd%0AmZcZftr69jUDJpEXVc7tvuPEHGa348YnuZNfdxZWYjzQoCOSDCy4A24av5zp824h9AHqoE83EuOU%0AGgT%2FCJKTnVQUmYujVnM%2FFcdas6sMgXr0qZosqjTIf9w9KQEFxyGuZ6AX4SQyxzds81vcmUyTVr2M%0ATXTANTDj47Jm7nrccB1Zn3qAJHznv2jLewAMfOHkUGpZOseCs%2Fq4vOAvdXG49xim2JR7S8NMlbNz%0AHlTfOGGXG3WflFze8%2F%2F%2BQ43pw3CYq99RGO2CHA%3D%3D%0A&",
+                apiv, VerSion);
+            String ret = PostHttps(host, str, true);
+            JObject jsonData = JObject.Parse(ret);
+            dict["UserID"] = jsonData["UserID"].ToString();
+            dict["Token"] = jsonData["Token"].ToString();
+            loginInfo = dict;
+            return dict;
+        }
+
+        /// <summary>
+        /// 获取股票所属市场
+        /// </summary>
+        /// <param name="code">代码</param>
+        /// <returns>0 深圳主板 ，1 上海主板， 2 深圳创业板， 3 上海科创板 4 北交所 -1 错误</returns>
+        public static int GetStockMarket(string code)
+        {
+            string c1 = code.Substring(0,1);
+            string c12 = code.Substring(0, 2);
+            if (c12.Equals("60"))
+            {
+                return 1;
+            }
+            else if (c12.Equals("00"))
+            {
+                return 0;
+            }
+            else if (c12.Equals("30"))
+            {
+                return 2;
+            }
+            else if (c12.Equals("68"))
+            {
+                return 3;
+            }
+            else if (c1.Equals("4")|| c1.Equals("8"))
+            {
+                return 4;
+            }
+            return -1;
+        }
+
+        //查询盘口
+        public static DataTable GetStockPanKouTable(string stockID)
+        {
+            string str = String.Format("a=GetStockPanKou_Narrow&apiv={1}&c=StockL2Data&StockID={2}&PhoneOSNew=1&State=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&"
+                , VerSion, apiv, stockID);
+            String host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+
+            String rsp = KplHelper.PostHttps(host, str, false);
+
+            JObject jsonData = JObject.Parse(rsp);
+            DataTable data = new DataTable();
+            data.Columns.Add("Key", typeof(String));//0
+            data.Columns.Add("Value", typeof(Object));//1
+
+            data.Rows.Add(new object[] {"code", jsonData["code"] });
+            data.Rows.Add(new object[] { "name", jsonData["name"] });
+
+            JArray infoArray = (JArray)jsonData["YJJY"];
+            data.Rows.Add(new object[] { "涨停次数", infoArray[0] });
+            data.Rows.Add(new object[] { "溢价次数", infoArray[1] });
+            data.Rows.Add(new object[] { "次日红盘率", infoArray[2] });
+            data.Rows.Add(new object[] { "首版封板率", infoArray[3] });
+            data.Rows.Add(new object[] { "首版破板率", infoArray[4] });
+            data.Rows.Add(new object[] { "连板率", infoArray[5] });
+
+            return data;
+        }
+
+        //查询所属板块概念
+        public static DataTable GetStockBKTable(string stockID)
+        {
+            string str = String.Format("a=GetConceptJXBKw23&apiv={1}&c=StockF10Basic&StockID={2}&PhoneOSNew=1&DeviceID=8e5dd85e-33cc-3f2f-974c-fadd5169a64b&VerSion={0}&"
+                , VerSion, apiv, stockID);
+            String host = "https://apparticle.longhuvip.com/w1/api/index.php";
+
+            String rsp = KplHelper.PostHttps(host, str, true);
+
+            DataTable data = new DataTable();
+            data.Columns.Add("代码", typeof(String));//0
+            data.Columns.Add("名称", typeof(String));//1
+            data.Columns.Add("解析", typeof(String));//2
+
+            JObject jsonData = JObject.Parse(rsp);
+            JArray infoArray = (JArray)jsonData["List"];
+            foreach (JObject ja in infoArray)
+            {
+                DataRow dr = data.Rows.Add();
+                dr[0] = ja["CCode"];
+                dr[1] = ja["CName"];
+                dr[2] = ja["Analysis"];
+            }
+
+            return data;
+        }
+        //默认按成交额排序，全市场股票龙虎榜
+        //Type 6 涨幅，10 价格， 25市值
+        public static DataTable GetRealLHTable(string date,bool realTime, int tpe,string R = "")
+        {
+            String datafmt = realTime ? "Order=1&a=RealRankingInfo_W8&st=60&c=NewStockRanking&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Isst=1&index=0&Date={2}&apiv={1}&Type={3}&FilterMotherboard=0&Filter=0&Ratio=3&FilterTIB=1&FilterGem=1&" : 
+                "Order=1&a=HisRankingInfo_W8&st=60&c=HisStockRanking&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Isst=1&index=0&Date={2}&apiv={1}&Type={3}&FilterMotherboard=0&Filter=0&Ratio=3&FilterTIB=1&FilterGem=1&";
+            /*if (String.IsNullOrEmpty(date))
+            {
+                datafmt = datafmt + "RStart=0925&REnd=1130&";
+            }*/
+            if (!String.IsNullOrEmpty(R))
+            {
+                datafmt = datafmt + R;
+            }
+            string dd = String.Format(datafmt, VerSion, apiv, date, tpe);
+            string url = realTime ? "https://apphwhq.longhuvip.com/w1/api/index.php" : "https://apphis.longhuvip.com/w1/api/index.php";
+            String str = KplHelper.PostHttps(url, dd, !realTime);
+            
+            DataTable data = new DataTable();
+            data.Columns.Add("代码", typeof(String));//0
+            data.Columns.Add("名称", typeof(String));//1
+            data.Columns.Add("F2", typeof(String));//2 空
+            data.Columns.Add("F3", typeof(long));//3 空
+            data.Columns.Add("板块", typeof(String));//4
+            data.Columns.Add("价格", typeof(Double));//5
+            data.Columns.Add("涨幅", typeof(Double));//6
+            data.Columns.Add("成交额", typeof(long));//7
+            data.Columns.Add("实际换手", typeof(Double));//8
+            data.Columns.Add("涨速", typeof(Double));//9
+            data.Columns.Add("实际流通", typeof(long));//10
+            data.Columns.Add("主力买", typeof(long));//11
+            data.Columns.Add("主力卖", typeof(long));//12
+            data.Columns.Add("主力净额", typeof(long));//13
+            data.Columns.Add("第几板", typeof(String));//23
+
+            data.Columns.Add("总市值", typeof(long));//37
+            data.Columns.Add("流通市值", typeof(long));//38
+            data.Columns.Add("描述", typeof(String));//39
+
+            JObject jsonData = JObject.Parse(str);
+            JArray infoArray = (JArray)jsonData["list"];
+            int[] da = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,23, 37, 38, 39 };
+            foreach (JArray ja in infoArray)
+            {
+                DataRow dr = data.Rows.Add();
+                for (int i = 0; i < data.Columns.Count; i++)
+                {
+                    JValue jv = (JValue)ja[da[i]];
+                    dr[i] = jv;
+                }
+                //data.ImportRow(dr);
+            }
+
+            return data;
+        }
+        /// <summary>
+        /// 涨停炸板
+        /// </summary>
+        /// <param name="bs"></param>
+        /// <param name="zt"></param>
+        /// <param name="date"></param>
+        /// <param name="realTime"></param>
+        /// <returns></returns>
+        public static DataTable GetZTZBTable(int bs, bool zt, string date, bool realTime)
+        {
+            return null;
+        }
+
+        /*Order=0&st=19&a=DailyLimitPerformance&c=HisHomeDingPan&PhoneOSNew=1
+         * &DeviceID=8e5dd85e-33cc-3f2f-974c-fadd5169a64b
+         * &VerSion=5.13.0.2&Index=0&PidType=1&apiv=w35&Type=4&Day=2024-03-07&
+        Order:0涨停，1未涨停
+        Order&PidType&Type: 
+          0 1 4 :一板涨停
+          0 2 4 :二板涨停
+          1 2 5 :二板未涨停
+            3   ：三板
+            4   ：四板
+            5   ：更高板
+        a=DailyLimitPerformance 涨停 a=DailyLimitPerformance2, 未涨停
+        st：获取列表数
+        Index=0 索引
+        Day：日期 yyyy-MM-dd
+         */
+
+        /*
+         * bs:板数，1,2,3,4,5 
+         */
+
+        //返回数据DataTable
+        public static string GetZTBX(int bs,bool zt,string date,bool realTime)
+        {
+            String str = "";
+            String host = "";
+            if (!realTime)
+            {
+                str = String.Format("Order={0}&st=100&a=DailyLimitPerformance{1}&c=HisHomeDingPan&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&Index=0&PidType={2}&Type={3}&Day={4}&",
+                    zt ? 0 : 1,
+                    zt ? "" : "2",
+                    bs,
+                    zt ? 4 : 5,
+                    date);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+            else
+            {
+                str = String.Format("Order={0}&a=DailyLimitPerformance{1}&st=100&Type={3}&c=HomeDingPan&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&Index=0&PidType={2}&",
+                    zt ? 0 : 1,
+                    zt ? "" : "2",
+                    bs,
+                    zt ? 4 : 5,
+                    date);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            str += String.Format("apiv={0}&VerSion={1}&", apiv, VerSion);
+            return PostHttps(host, str, !realTime);
+        }
+
+        public static DataTable GetZTBXTable(int bs, bool zt, string date, bool realTime)
+        {
+            string str = GetZTBX(bs, zt, date, realTime);
+                
+            JObject jsonData = JObject.Parse(str);
+            JArray infoArray = (JArray)jsonData["info"];
+            DataTable data = new DataTable();
+            if (zt)
+            {
+                data.Columns.Add("代码", typeof(String));//0
+                data.Columns.Add("名称", typeof(String));//1
+                data.Columns.Add("F2", typeof(long));//2 空
+                data.Columns.Add("F3", typeof(String));//3 空
+                data.Columns.Add("涨停时间", typeof(long));//4
+                data.Columns.Add("涨停原因", typeof(String));//5
+                data.Columns.Add("封单", typeof(long));//6
+                data.Columns.Add("最大封单", typeof(long));//7
+                data.Columns.Add("主力净额", typeof(long));//8
+                data.Columns.Add("主力买入", typeof(long));//9
+                data.Columns.Add("主力卖出", typeof(long));//10
+                data.Columns.Add("成交额", typeof(long));//11
+                data.Columns.Add("板块", typeof(String));//12
+                data.Columns.Add("实际流通", typeof(long));//13
+                data.Columns.Add("实际换手", typeof(Double));//14
+                data.Columns.Add("第几板", typeof(String));//15
+                data.Columns.Add("回封", typeof(long));//16
+                data.Columns.Add("振幅", typeof(Double));//17
+                data.Columns.Add("连板状态", typeof(String));//18
+                data.Columns.Add("板块代码", typeof(String));//19 含义不明
+                data.Columns.Add("板块板数", typeof(long));//20
+                data.Columns.Add("价格", typeof(double));//21
+            }
+            else
+            {
+                data.Columns.Add("代码", typeof(String));//0
+                data.Columns.Add("名称", typeof(String));//1
+                data.Columns.Add("F2", typeof(long));//2 空
+                data.Columns.Add("F3", typeof(String));//3 空
+                data.Columns.Add("价格", typeof(Double));//4
+                data.Columns.Add("涨幅", typeof(Double));//5
+                data.Columns.Add("板块", typeof(String));//6
+                data.Columns.Add("主力净额", typeof(long));//7
+                data.Columns.Add("主力买入", typeof(long));//8
+                data.Columns.Add("主力卖出", typeof(long));//9
+                data.Columns.Add("成交额", typeof(long));//10
+                data.Columns.Add("实际流通", typeof(long));//11
+                data.Columns.Add("实际换手", typeof(Double));//12
+                data.Columns.Add("第几板", typeof(String));//13
+                data.Columns.Add("振幅", typeof(Double));//14
+                data.Columns.Add("连板状态板", typeof(String));//15
+                data.Columns.Add("破板", typeof(long));//16
+            }
+            data.Columns.Add("bs",typeof(long));
+            data.Columns.Add("zt", typeof(long));
+            data.Columns.Add("date",typeof(String));
+
+            foreach (JArray ja in infoArray[0])
+            {
+                DataRow dr = data.Rows.Add();
+                for (int i = 0; i < ja.Count; i++)
+                {
+                    JValue jv = (JValue)ja[i];
+                    dr[i] = jv;
+                }
+                dr["bs"] = bs;
+                dr["zt"] = Convert.ToInt32(zt);
+                dr["date"] = date;
+                //data.ImportRow(dr);
+            }
+
+            return data;
+        }
+
+       
+        //获取板块数据
+        //Order 1降序 0升序
+        //Type 6 涨幅，10 价格， 25市值
+        public static string GetBkStock(string bkcode, string date,int offset,bool realTime, string R = "")
+        {
+            String str = "";
+            String host = "";
+            if (!realTime)
+            {
+                str = String.Format("Order=1&a=ZhiShuStockList_W8&st=30&c=ZhiShuRanking&PhoneOSNew=1&old=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&IsZZ=0&Token=0&Index={2}&Date={0}&Type=6&IsKZZType=0&UserID=0&PlateID={1}&",
+                date, bkcode, offset);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+
+            else
+            {
+                str = String.Format("Order=1&a=ZhiShuStockList_W8&st=30&c=ZhiShuRanking&PhoneOSNew=1&old=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&IsZZ=0&Token=0&Index={1}&Type=6&IsKZZType=0&UserID=0&PlateID={0}&"
+                , bkcode, offset);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            if (!String.IsNullOrEmpty(R))
+            {
+                str = str + R;
+            }
+            str += String.Format("apiv={0}&VerSion={1}&", apiv, VerSion);
+            if (loginInfo.ContainsKey("UserID"))
+            {
+                str = str + String.Format("UserID={0}&Token={1}&", loginInfo["UserID"], loginInfo["Token"]);
+            }
+            return PostHttps(host, str, !realTime);
+        }
+        public static DataTable GetBkStockTable(string bkcode, string date,bool realTime,bool onlyFirstPage = false,string R= "")
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("代码", typeof(String));//0
+            data.Columns.Add("名称", typeof(String));//1
+            data.Columns.Add("标记", typeof(String));//2
+            data.Columns.Add("板块", typeof(String));//4
+            data.Columns.Add("价格", typeof(Double));//5
+            data.Columns.Add("涨幅", typeof(Double));//6
+            data.Columns.Add("成交额", typeof(long));//7
+            data.Columns.Add("实际流通", typeof(long));//10
+            data.Columns.Add("主力净额", typeof(long));//13
+            data.Columns.Add("量比", typeof(Double));//21
+            data.Columns.Add("第几板", typeof(String));//23
+            data.Columns.Add("地位", typeof(String));//24
+
+            data.Columns.Add("封单", typeof(long));//28
+            data.Columns.Add("最大封单", typeof(long));//29
+
+            data.Columns.Add("竞价量比", typeof(Double));//34
+            data.Columns.Add("竞价金额", typeof(long));//35
+            data.Columns.Add("竞价涨幅", typeof(Double));//36
+            data.Columns.Add("总市值", typeof(long));//37
+            int[] da = new int[] { 0, 1, 2, 4, 5, 6, 7, 10, 13, 21, 23, 24, 28, 29, 34, 35, 36, 37 };
+
+            int offset = 0;
+            while (true)
+            {
+                string str = GetBkStock(bkcode, date, offset, realTime, R);
+                offset += 30;
+                JObject jsonData = JObject.Parse(str);
+                JArray infoArray = (JArray)jsonData["list"];
+                if (0 == infoArray.Count)
+                    break;
+                foreach (JArray ja in infoArray)
+                {
+                    DataRow dr = data.Rows.Add();
+                    for (int i = 0; i < da.Length; i++)
+                    {
+                        JValue jv = (JValue)ja[da[i]];
+                        dr[i] = jv;
+                    }
+                    //data.ImportRow(dr);
+                }
+                if (onlyFirstPage)
+                    break;
+            }
+            return data;
+        }
+
+        //获取板块列表
+        //Order 1降序 0升序
+        //Type 2 涨幅
+        //ZSTYPE 7精选,4行业,5概念,6地区
+        //RStart REnd 4位时间 0930 0935
+        public static string GetBkList(int zsType, string date, int offset, bool realTime,String RStart,String REnd)
+        {
+            String str = "";
+            String host = "";
+            int type = 2;//默认涨幅排序
+            if (zsType == 7)
+                type = 0;//对于精选，0 强度 1 涨幅
+            if (!realTime)
+            {
+                str = String.Format("Order=1&st=30&a=RealRankingInfo&c=ZhiShuRanking&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&Index={2}&Date={0}&Type={3}&ZSType={1}&",
+                date, zsType, offset, type);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+
+            else
+            {
+                str = String.Format("Order=1&a=RealRankingInfo&st=30&Type={2}&c=ZhiShuRanking&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&Index={0}&ZSType={1}&",
+                 offset, zsType, type);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            str += String.Format("apiv={0}&VerSion={1}&", apiv, VerSion);
+            if (!String.IsNullOrEmpty(RStart) && !String.IsNullOrEmpty(REnd))
+            {
+                str = str + String.Format("RStart={0}&REnd={1}&", RStart, REnd);
+            }
+            return PostHttps(host, str, !realTime);
+        }
+
+
+        public static DataTable GetBkListTable(int zsType, string date, bool realTime, bool onlyFirstPage = false, String RStart="", String REnd="")
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("板块代码", typeof(String));//0
+            data.Columns.Add("板块名称", typeof(String));//1
+            data.Columns.Add("强度", typeof(long));//2 只对精选有效
+            data.Columns.Add("涨幅", typeof(Double));//3 对精选无效
+            data.Columns.Add("成交额", typeof(long));//5
+            data.Columns.Add("主力净额", typeof(long));//6
+
+            data.Columns.Add("量比", typeof(Double));//9
+            data.Columns.Add("流通市值", typeof(long));//10
+            data.Columns.Add("区间涨幅", typeof(Double));//11
+
+            int[] da = new int[] { 0, 1, 2, 3, 5, 6, 9, 10, 11 };
+
+            int offset = 0;
+            while (true)
+            {
+                string str = GetBkList(zsType, date, offset, realTime, RStart, REnd);
+                offset += 30;
+                JObject jsonData = JObject.Parse(str);
+                JArray infoArray = (JArray)jsonData["list"];
+                if (0 == infoArray.Count)
+                    break;
+                foreach (JArray ja in infoArray)
+                {
+                    DataRow dr = data.Rows.Add();
+                    for (int i = 0; i < da.Length; i++)
+                    {
+                        JValue jv = (JValue)ja[da[i]];
+                        dr[i] = jv;
+                    }
+                    //data.ImportRow(dr);
+                }
+                if (onlyFirstPage)
+                    break;
+            }
+            return data;
+        }
+        public static DataTable GetZFDetail(string date, bool realTime)
+        {
+            string str = "";
+            string host = "";
+            if (realTime)
+            {
+                str = String.Format("a=ZhangFuDetail&apiv={1}&c=HomeDingPan&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&",
+                     VerSion, apiv);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            else
+            {
+                string day = date;
+                str = String.Format("a=HisZhangFuDetail&apiv={1}&c=HisHomeDingPan&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Day={2}&",
+                     VerSion, apiv, day);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+            string ret = PostHttps(host, str, !realTime);
+
+            DataTable data = new DataTable();
+            data.Columns.Add("Key", typeof(String));
+            data.Columns.Add("Value", typeof(Object));
+
+            JObject jsonData = JObject.Parse(ret);
+            JObject info = (JObject)jsonData["info"];
+
+
+            string[] keys = new string[] { "SJZT" , "SJDT", "SZJS", "XDJS", "qscln" };
+
+            foreach (string key in keys)
+            {
+                DataRow r = data.Rows.Add();
+                r[0] = key;
+                r[1] = info[key];
+            }
+            return data;
+        }
+        public static DataTable GetZSPanKou(string stockID)
+        {
+            String str = String.Format("a=GetZsPanKou&apiv={1}&c=StockL2Data&StockID={2}&PhoneOSNew=1&UserID=0&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&",
+                 VerSion, apiv, stockID);
+            String host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+
+            string ret = PostHttps(host, str, false);
+
+            DataTable data = new DataTable();
+            data.Columns.Add("Key", typeof(String));
+            data.Columns.Add("Value", typeof(Object));
+
+            JObject jsonData = JObject.Parse(ret);
+            JObject real = (JObject)jsonData["real"];
+
+            DataRow r = data.Rows.Add();
+            r[0] = "code";
+            r[1] = jsonData["code"];
+
+            r = data.Rows.Add();
+            r[0] = "preclose_px";
+            r[1] = jsonData["preclose_px"];
+
+            r = data.Rows.Add();
+            r[0] = "day";
+            r[1] = jsonData["day"];
+
+
+            string[] keys = new string[] { "last_px", "open_px", "high_px", "low_px", "px_change_rate" };
+
+            foreach (string key in keys)
+            {
+                DataRow dr = data.Rows.Add();
+                dr[0] = key;
+                dr[1] = real[key];
+            }
+
+            return data;
+        }
+
+        public static string GetIndexFSData(string stockID, string date, bool realTime)
+        {
+            string str = "";
+            string host = "";
+            if (realTime)
+            {
+                str = String.Format("a=GetTrendIncremental&apiv={1}&c=ZhiShuL2Data&StockID={2}&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Day=&",
+                     VerSion, apiv, stockID);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            else
+            {
+                string day = date;
+                str = String.Format("a=GetTrendIncremental&apiv={1}&c=ZhiShuL2Data&StockID={2}&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Day={3}&",
+                     VerSion, apiv, stockID, day);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+            return PostHttps(host, str, !realTime);
+        }
+
+        public static DataTable GetFSDanDanDataTable(string stockID, string date, bool realTime)
+        {
+            string str = "";
+            string host = "";
+            if (realTime)
+            {
+                str = String.Format("a=GetStockDaDanTrendIncremental&apiv={1}&c=StockL2Data&StockID={2}&PhoneOSNew=1&UserID=0&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&",
+                     VerSion, apiv, stockID);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            else
+            {
+                string day = date.Replace("-", "");
+                str = String.Format("a=GetStockDaDanTrend&apiv={1}&c=StockL2History&StockID={2}&PhoneOSNew=1&UserID=0&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&Day={3}&",
+                     VerSion, apiv, stockID, day);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+            String ret =  PostHttps(host, str, !realTime);
+
+
+            DataTable data = new DataTable();
+            data.Columns.Add("时间", typeof(String));
+            data.Columns.Add("金额", typeof(Double));
+
+            JObject jsonData = JObject.Parse(ret);
+            JArray dadanjinge = (JArray)jsonData["dadanjinge"];
+
+            for (int i = 0; i < dadanjinge.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                JArray dataArr = (JArray)dadanjinge[i];
+                dr[0] = dataArr[0];
+                dr[1] = dataArr[1];
+            }
+
+            return data;
+        }
+        public static string GetFSData(string stockID,string date, bool realTime)
+        {
+            string str = "";
+            string host = "";
+            if (realTime)
+            {
+                str = String.Format("a=GetStockTrendIncremental&apiv={1}&Type=1&c=StockL2Data&StockID={2}&PhoneOSNew=1&UserID=0&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&",
+                     VerSion, apiv, stockID);
+                host = "https://apphwhq.longhuvip.com/w1/api/index.php";
+            }
+            else
+            {
+                string day = date.Replace("-", "");
+                str = String.Format("a=GetStockTrend&apiv={1}&c=StockL2History&StockID={2}&PhoneOSNew=1&UserID=0&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&Day={3}&",
+                     VerSion, apiv, stockID, day);
+                host = "https://apphis.longhuvip.com/w1/api/index.php";
+            }
+            return PostHttps(host, str, !realTime);
+        }
+        public static DataTable GetFSDataTable(string stockID, string date, bool realTime)
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("时间", typeof(String));
+            data.Columns.Add("价格", typeof(Double));
+            data.Columns.Add("均价", typeof(Double));
+            data.Columns.Add("成交量", typeof(long));
+            data.Columns.Add("其他", typeof(long));
+
+            string str = GetFSData(stockID, date, realTime);
+            JObject jsonData = JObject.Parse(str);
+            JArray trend = (JArray)jsonData["trend"];
+
+            DataRow r = data.Rows.Add();
+            r[0] = jsonData["code"];
+            r[1] = jsonData["preclose_px"];
+            r[2] = jsonData["begin_px"];
+            r[3] = jsonData["total_turnover"];
+            r[4] = 0;
+
+            r = data.Rows.Add();
+            r[0] = jsonData["day"];
+            r[1] = jsonData["hprice"];
+            r[2] = jsonData["lprice"];
+            r[3] = 0;
+            r[4] = 0;
+
+            for (int i = 0; i < trend.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                JArray dataArr = (JArray)trend[i];
+                dr[0] = dataArr[0];
+                dr[1] = dataArr[1];
+                dr[2] = dataArr[2];
+                dr[3] = dataArr[3];
+                dr[4] = dataArr[4];
+            }
+
+            return data;
+        }
+
+        public static DataTable GetIndexFSDataTable(string stockID, string date, bool realTime)
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("时间", typeof(String));
+            data.Columns.Add("价格", typeof(Double));
+            data.Columns.Add("均价", typeof(Double));
+            data.Columns.Add("成交量", typeof(long));
+            data.Columns.Add("其他", typeof(long));
+
+            string str = GetIndexFSData(stockID, date, realTime);
+            JObject jsonData = JObject.Parse(str);
+            JArray trend = (JArray)jsonData["trend"];
+
+            DataRow r = data.Rows.Add();
+            r[0] = jsonData["code"];
+            r[1] = jsonData["preclose_px"];
+            r[2] = jsonData["begin_px"];
+            r[3] = Convert.ToInt64(jsonData["total_turnover"]);
+            r[4] = 0;
+
+            r = data.Rows.Add();
+            r[0] = jsonData["day"];
+            r[1] = jsonData["hprice"];
+            r[2] = jsonData["lprice"];
+            r[3] = 0;
+            r[4] = 0;
+
+            for (int i = 0; i < trend.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                JArray dataArr = (JArray)trend[i];
+                dr[0] = dataArr[0];
+                dr[1] = dataArr[1];
+                dr[2] = dataArr[2];
+                dr[3] = dataArr[3];
+                dr[4] = dataArr[4];
+            }
+
+            return data;
+        }
+
+        public static string GetKLineData(string stockID)
+        {
+            string str = String.Format("st=850&a=GetKLineDay_W14&c=StockLineData&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&Index=0&apiv={1}&Type=d&StockID={2}&UserID=0&",
+                VerSion, apiv, stockID);
+            string host = "https://apphis.longhuvip.com/w1/api/index.php";
+            return PostHttps(host, str, true);
+        }
+        public static string GetIndexKLineData(string stockID)
+        {
+            string str = String.Format("st=850&a=GetPlateKLineDay&c=ZhiShuKLine&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&Index=0&apiv={1}&Type=d&StockID={2}&UserID=0&",
+                VerSion, apiv, stockID);
+            string host = "https://apphis.longhuvip.com/w1/api/index.php";
+            return PostHttps(host, str, true);
+        }
+        public static DataTable GetZSKLineDataTable(string stockID)
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("日期", typeof(String));
+            data.Columns.Add("开盘", typeof(Double));
+            data.Columns.Add("收盘", typeof(Double));
+            data.Columns.Add("最高", typeof(Double));
+            data.Columns.Add("最低", typeof(Double));
+            data.Columns.Add("成交量", typeof(long));
+            data.Columns.Add("成交额", typeof(long));
+
+            string str = String.Format("st=1200&a=GetZhiShuKLine&c=ZhiShuKLine&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&Index=0&apiv={1}&Type=d&StockID={2}&UserID=0&",
+                VerSion, apiv, stockID);
+            string host = "https://apphis.longhuvip.com/w1/api/index.php";
+            string ret = PostHttps(host, str, true);
+
+            JObject jsonData = JObject.Parse(ret);
+            JArray xArray = (JArray)jsonData["x"];
+            JArray yArray = (JArray)jsonData["y"];
+            JArray volArray = (JArray)jsonData["vol"];
+            JArray balArray = (JArray)jsonData["bal"];
+
+            for (int i = 0; i < xArray.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                dr[0] = xArray[i];
+                JArray dataArr = (JArray)yArray[i];
+                dr[1] = dataArr[0];
+                dr[2] = dataArr[1];
+                dr[3] = dataArr[2];
+                dr[4] = dataArr[3];
+
+                dr[5] = volArray[i];
+                dr[6] = balArray[i];
+            }
+            return data;
+        }
+        public static DataTable GetDaDanKLineDataTable(string stockID)
+        {
+            string str = String.Format("st=850&a=GetDaDanKLine2New&c=StockLineData&PhoneOSNew=1&DeviceID=0330ef27-36e8-3978-8bb6-2e21ae5c4416&VerSion={0}&Token=0&Index=0&apiv={1}&Type=d&StockID={2}&UserID=0&",
+                VerSion, apiv, stockID);
+            string host = "https://apphis.longhuvip.com/w1/api/index.php";
+            string ret = PostHttps(host, str, true);
+            JObject jsonData = JObject.Parse(ret);
+            JArray xArray = (JArray)jsonData["Date"];
+            JArray yArray = (JArray)jsonData["DDJE"];
+            DataTable data = new DataTable();
+            data.Columns.Add("日期", typeof(String));
+            data.Columns.Add("金额", typeof(Double));
+            for (int i = 0; i < xArray.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                dr[0] = xArray[i];
+                dr[1] = yArray[i];
+            }
+            return data;
+        }
+        public static DataTable GetKLineDataTable(string stockID)
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("日期", typeof(String));
+            data.Columns.Add("开盘", typeof(Double));
+            data.Columns.Add("收盘", typeof(Double));
+            data.Columns.Add("最高", typeof(Double));
+            data.Columns.Add("最低", typeof(Double));
+            data.Columns.Add("成交量", typeof(long));
+            data.Columns.Add("成交额", typeof(long));
+            data.Columns.Add("换手", typeof(Double));
+            data.Columns.Add("涨停", typeof(long));
+
+            string str = GetKLineData(stockID);
+            JObject jsonData = JObject.Parse(str);
+            JArray xArray = (JArray)jsonData["x"];
+            JArray yArray = (JArray)jsonData["y"];
+            JArray volArray = (JArray)jsonData["vol"];
+            JArray balArray = (JArray)jsonData["bal"];
+            JArray turnoverArray = (JArray)jsonData["turnover"];
+            JArray stateZTArray = (JArray)jsonData["stateZT"];
+
+            for (int i = 0; i < xArray.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                dr[0] = xArray[i];
+                JArray dataArr = (JArray)yArray[i];
+                dr[1] = dataArr[0];
+                dr[2] = dataArr[1];
+                dr[3] = dataArr[2];
+                dr[4] = dataArr[3];
+
+                dr[5] = volArray[i];
+                dr[6] = balArray[i];
+                dr[7] = turnoverArray[i];
+                dr[8] = stateZTArray[i];
+            }
+            return data;
+
+        }
+
+        public static DataTable GetIndexKLineDataTable(string stockID)
+        {
+            DataTable data = new DataTable();
+            data.Columns.Add("日期", typeof(String));
+            data.Columns.Add("开盘", typeof(Double));
+            data.Columns.Add("收盘", typeof(Double));
+            data.Columns.Add("最高", typeof(Double));
+            data.Columns.Add("最低", typeof(Double));
+            data.Columns.Add("成交量", typeof(long));
+            data.Columns.Add("成交额", typeof(long));
+
+            string str = GetIndexKLineData(stockID);
+            JObject jsonData = JObject.Parse(str);
+            JArray xArray = (JArray)jsonData["x"];
+            JArray yArray = (JArray)jsonData["y"];
+            JArray volArray = (JArray)jsonData["vol"];
+            JArray balArray = (JArray)jsonData["bal"];
+
+            for (int i = 0; i < xArray.Count; i++)
+            {
+                DataRow dr = data.Rows.Add();
+                dr[0] = xArray[i];
+                JArray dataArr = (JArray)yArray[i];
+                dr[1] = dataArr[0];
+                dr[2] = dataArr[1];
+                dr[3] = dataArr[2];
+                dr[4] = dataArr[3];
+
+                dr[5] = volArray[i];
+                dr[6] = balArray[i];
+            }
+            return data;
+
+        }
+        public static string DecompressGzip(Stream stm)
+        {
+            string strHTML = "";
+
+
+            GZipStream gzip = new GZipStream(stm, CompressionMode.Decompress);//解压缩
+            using (StreamReader reader = new StreamReader(gzip, Encoding.UTF8))
+            {
+                strHTML = reader.ReadToEnd();
+            }
+
+            return strHTML;
+        }
+        public static string PostHttps(string url, string dataStr,bool isGzip)
+        {
+            if (url.Contains("https://apphwhq.longhuvip.com"))
+                isGzip = true;//always
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+
+            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(CheckValidationResult);
+            request.ProtocolVersion = HttpVersion.Version11;
+            // 这里设置了协议类型。
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            ServicePointManager.CheckCertificateRevocationList = true;
+            ServicePointManager.DefaultConnectionLimit = 100;
+            ServicePointManager.Expect100Continue = false;
+
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+            request.UserAgent = "Dalvik/2.1.0 (Linux; U; Android 12; 2201123C Build/V417IR)";
+            request.Headers.Add("Accept-Encoding", "gzip");
+            //request.Headers.Add("Connection", "Keep-Alive");
+            request.KeepAlive = true;
+            //request.Accept  = "gzip";
+
+            //参数
+            //ASCIIEncoding encoding = new ASCIIEncoding();
+            byte[] data = Encoding.UTF8.GetBytes(dataStr);
+
+            request.ContentLength = data.Length;
+            Stream sm = request.GetRequestStream();
+            sm.Write(data, 0, data.Length);
+            sm.Close();
+
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            Stream rs = response.GetResponseStream();
+            String result = "";
+            if (isGzip)
+            {
+                result = DecompressGzip(rs);
+            }
+            else
+            {
+                StreamReader sRead = new StreamReader(rs);
+                result = sRead.ReadToEnd();
+            }
+            result = Regex.Unescape(result);
+            rs.Close();
+            return result;
+        }
+        private static bool CheckValidationResult(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+        {
+            return true; //总是接受  
+        }
+    }
+}
